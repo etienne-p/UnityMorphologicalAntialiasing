@@ -31,6 +31,8 @@ namespace MorphologicalAntialiasing
         RTHandle m_StencilTarget;
         SubPass m_SubPass;
 
+        public Vector2 Yolo;
+        
         public MorphologicalAntialiasingPass(Material detectEdgesMaterial, Material blendingWeightsMaterial,
             Material blendingMaterial)
         {
@@ -50,13 +52,15 @@ namespace MorphologicalAntialiasing
 
             m_DetectEdgesMaterial.SetFloat(ShaderIds._Threshold, data.Threshold);
             m_BlendingWeightsMaterial.SetTexture(ShaderIds._AreaLookupTexture, data.AreaLookupTexture);
-            // Prevent zero iteration
+            // Prevent zero iteration, would lead to infinite loop in shader.
             m_BlendingWeightsMaterial.SetInt(ShaderIds._MaxSearchDistance, math.max(1, data.MaxSearchDistance));
             m_BlendingMaterial.SetTexture(ShaderIds._BlendTexture, data.BlendingWeightsHandle);
-            // Could .rt be null?
-            m_DetectEdgesMaterial.SetVector(ShaderIds._TexelSize, data.ColorHandle.rt.texelSize);
-            m_BlendingWeightsMaterial.SetVector(ShaderIds._TexelSize, data.ColorHandle.rt.texelSize);
-            m_BlendingMaterial.SetVector(ShaderIds._TexelSize, data.ColorHandle.rt.texelSize);
+            
+            var rt = data.ColorHandle.rt;
+            var texelSize = new Vector2(1f / rt.width, 1f / rt.height);
+            m_DetectEdgesMaterial.SetVector(ShaderIds._TexelSize, texelSize);
+            m_BlendingWeightsMaterial.SetVector(ShaderIds._TexelSize, texelSize);
+            m_BlendingMaterial.SetVector(ShaderIds._TexelSize, texelSize);
         }
 
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
@@ -70,6 +74,8 @@ namespace MorphologicalAntialiasing
 
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
+            m_BlendingMaterial.SetVector("_YOLO", Yolo);
+            
             Assert.IsNotNull(m_DetectEdgesMaterial);
 
             var cmd = CommandBufferPool.Get(k_Name);

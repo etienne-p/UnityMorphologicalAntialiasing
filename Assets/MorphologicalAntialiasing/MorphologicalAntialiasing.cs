@@ -36,6 +36,7 @@ namespace MorphologicalAntialiasing
         [SerializeField] int m_MaxSearchDistance = 9;
         [SerializeField] SubPass m_SubPass;
         [SerializeField] RenderPassEvent m_RenderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
+        [SerializeField] Vector2 m_Yolo;
 
         Material m_DetectEdgesMaterial;
         Material m_BlendingWeightsMaterial;
@@ -71,7 +72,8 @@ namespace MorphologicalAntialiasing
 
             AreaLookup.GenerateLookup(ref m_AreaLookupTexture, 9, m_MaxSmooth);
 
-            m_RenderPass = new MorphologicalAntialiasingPass(m_DetectEdgesMaterial, m_BlendingWeightsMaterial, m_BlendingMaterial);
+            m_RenderPass =
+                new MorphologicalAntialiasingPass(m_DetectEdgesMaterial, m_BlendingWeightsMaterial, m_BlendingMaterial);
             m_RenderPass.renderPassEvent = m_RenderPassEvent;
         }
 
@@ -107,6 +109,8 @@ namespace MorphologicalAntialiasing
                 };
 
                 m_RenderPass.SetPassData(passData);
+
+                m_RenderPass.Yolo = m_Yolo;
             }
         }
 
