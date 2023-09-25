@@ -16,10 +16,10 @@ half4 Frag (Varyings input) : SV_Target
     float2 uv = input.texcoord.xy;
 
     float depth =       SampleDepth(input.texcoord.xy);
-    float depthLeft =   SampleDepth(uv + _TexelSize * float2(-1, 0));
-    float depthRight =  SampleDepth(uv + _TexelSize * float2( 1, 0));
-    float depthTop =    SampleDepth(uv + _TexelSize * float2(0, -1));
-    float depthBottom = SampleDepth(uv + _TexelSize * float2(0,  1));
+    float depthLeft =   SampleDepth(uv + _TexelSize * float2(-1,  0));
+    float depthTop =    SampleDepth(uv + _TexelSize * float2( 0, -1));
+    float depthRight =  SampleDepth(uv + _TexelSize * float2( 1,  0));
+    float depthBottom = SampleDepth(uv + _TexelSize * float2( 0,  1));
 
     float4 delta = abs(depth.xxxx - float4(depthLeft, depthTop, depthRight, depthBottom));
     float4 edges = step(_Threshold.xxxx, delta);

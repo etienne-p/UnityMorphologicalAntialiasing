@@ -5,6 +5,8 @@
 TEXTURE2D_X(_BlendTexture);
 
 float2 _TexelSize;
+
+// TODO REMOVE
 float2 _YOLO;
 
 half4 Frag(Varyings input) : SV_Target

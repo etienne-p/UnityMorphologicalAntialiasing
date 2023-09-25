@@ -1,9 +1,9 @@
 using System;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.Serialization;
 
 namespace MorphologicalAntialiasing
 {
@@ -23,7 +23,7 @@ namespace MorphologicalAntialiasing
         public RTHandle StencilHandle;
         public Texture AreaLookupTexture;
         public float Threshold;
-        public int MaxSearchDistance;
+        public int MaxDistance;
         public SubPass SubPass;
     }
 
@@ -32,8 +32,8 @@ namespace MorphologicalAntialiasing
     public class MorphologicalAntialiasing : ScriptableRendererFeature
     {
         [SerializeField, Range(0, 1)] float m_Threshold;
-        [SerializeField] float m_MaxSmooth = 9;
-        [SerializeField] int m_MaxSearchDistance = 9;
+        [SerializeField] int m_MaxSmooth = 9;
+        [SerializeField] int m_MaxDistance = 9;
         [SerializeField] SubPass m_SubPass;
         [SerializeField] RenderPassEvent m_RenderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
         [SerializeField] Vector2 m_Yolo;
@@ -51,7 +51,10 @@ namespace MorphologicalAntialiasing
         /// <inheritdoc/>
         public override void Create()
         {
-            // TODO rename "Custom"
+            m_MaxDistance = math.max(2, m_MaxDistance);
+            m_MaxSmooth = math.max(2, m_MaxSmooth);
+            AreaLookup.GenerateLookup(ref m_AreaLookupTexture, m_MaxDistance, m_MaxSmooth);
+
             m_DetectEdgesMaterial = CoreUtils.CreateEngineMaterial(
                 LoadShader("Hidden/MorphologicalAntialiasing/DetectEdges"));
             m_BlendingWeightsMaterial = CoreUtils.CreateEngineMaterial(
@@ -70,10 +73,8 @@ namespace MorphologicalAntialiasing
             m_StencilHandle = RTHandles.Alloc(Vector2.one, depthBufferBits: DepthBits.Depth32,
                 dimension: TextureDimension.Tex2D, name: "Stencil");
 
-            AreaLookup.GenerateLookup(ref m_AreaLookupTexture, 9, m_MaxSmooth);
-
-            m_RenderPass =
-                new MorphologicalAntialiasingPass(m_DetectEdgesMaterial, m_BlendingWeightsMaterial, m_BlendingMaterial);
+            m_RenderPass = new MorphologicalAntialiasingPass(
+                m_DetectEdgesMaterial, m_BlendingWeightsMaterial, m_BlendingMaterial);
             m_RenderPass.renderPassEvent = m_RenderPassEvent;
         }
 
@@ -103,7 +104,7 @@ namespace MorphologicalAntialiasing
                     BlendingWeightsHandle = m_BlendingWeightsHandle,
                     StencilHandle = m_StencilHandle,
                     AreaLookupTexture = m_AreaLookupTexture,
-                    MaxSearchDistance = m_MaxSearchDistance,
+                    MaxDistance = m_MaxDistance,
                     Threshold = m_Threshold,
                     SubPass = m_SubPass
                 };

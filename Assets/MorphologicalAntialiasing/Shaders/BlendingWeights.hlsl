@@ -1,42 +1,61 @@
 ﻿#include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
 #include "Packages/com.unity.render-pipelines.core/Runtime/Utilities/Blit.hlsl"
 
-// Using a define to use a descriptive name.
-#define EDGES_TEXTURE _BlitTexture
-#define MAX_PX_DISTANCE 9
-#define AREA_SIZE (MAX_PX_DISTANCE * 5)
-
 TEXTURE2D_X(_AreaLookupTexture);
 float2 _TexelSize;
-uint _MaxSearchDistance;
+uint _MaxDistance;
+
+// Using a define to use a descriptive name.
+#define EDGES_TEXTURE _BlitTexture
+#define AREA_SIZE (_MaxDistance * 5)
 
 // Here we use bilinear filtering to check 2 pixels at once.
-float Search(in float2 uv, in float2 stepMul, in uint channel)
+float __Search(in float2 uv, in float2 stepMul, in float channel)
 {
-    uv += stepMul * (1.5).xx * _TexelSize;
+    uv += _TexelSize * stepMul * (1.5).xx;
 
     float e = 0;
 
     // TODO do-while?
     uint i;
     UNITY_LOOP
-    for (i = 0; i != _MaxSearchDistance; ++i)
+    for (i = 0; i != _MaxDistance; ++i)
     {
         float2 edge = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, uv, 0).rg;
         //e = edge[channel];
         // TODO better way?
         e = lerp(edge.x, edge.y, channel);
         
-        UNITY_FLATTEN
+        //UNITY_FLATTEN
         if (e < 0.9)
         {
             break;
         }
 
-        uv += stepMul * (2.0).xx * _TexelSize;
+        uv += _TexelSize * stepMul * (2.0).xx;
     }
 
-    return 2.0 * min(i - e, MAX_PX_DISTANCE);
+    return 2.0 * min(i + e, _MaxDistance);
+}
+
+// Here we use bilinear filtering to check 2 pixels at once.
+float Search(in float2 uv, in float2 stepMul, in float channel)
+{
+    uint i;
+    UNITY_LOOP
+    for (i = 0; i != 16; ++i)
+    {
+        uv += _TexelSize * stepMul;
+        float2 edge = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, uv, 0).rg;
+        
+        UNITY_FLATTEN
+        if (lerp(edge.x, edge.y, channel) < 0.5)
+        {
+            break;
+        }
+    }
+
+    return i;
 }
 
 float SearchXLeft(float2 uv)
@@ -61,7 +80,7 @@ float SearchYDown(float2 uv)
 
 float2 Area(float2 dist, float e1, float e2)
 {
-    float2 pxCoords = MAX_PX_DISTANCE * round(float2(e1, e2) * 4.0) + dist;
+    float2 pxCoords = _MaxDistance * round(float2(e1, e2) * 4.0) + dist;
     float2 texCoords = pxCoords / (AREA_SIZE - 1);
     return SAMPLE_TEXTURE2D_LOD(_AreaLookupTexture, sampler_PointClamp, texCoords, 0).rg;
 }
@@ -86,6 +105,8 @@ half4 Frag(Varyings input) : SV_Target
         float e1 = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, coords.xy, 0).r;
         float e2 = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, coords.zw, 0).r;
         weights.rg = Area(abs(d), e1, e2);
+        //weights.rg = abs(d) / _MaxDistance;
+        //weights.rg = float2(e1, e2);
     }
 
     // Edge at north.
@@ -99,6 +120,8 @@ half4 Frag(Varyings input) : SV_Target
         float e1 = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, coords.xy, 0).g;
         float e2 = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, coords.zw, 0).g;
         weights.ba = Area(abs(d), e1, e2);
+        //weights.ba = abs(d) / _MaxDistance;
+        //weights.ba = float2(e1, e2);
     }
 
     return weights;
