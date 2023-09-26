@@ -15,6 +15,7 @@ namespace MorphologicalAntialiasing
             public static readonly int _BlendTexture = Shader.PropertyToID("_BlendTexture");
             public static readonly int _AreaLookupTexture = Shader.PropertyToID("_AreaLookupTexture");
             public static readonly int _MaxDistance = Shader.PropertyToID("_MaxDistance");
+            public static readonly int _MaxSearchSteps = Shader.PropertyToID("_MaxSearchSteps");
         }
 
         const string k_Name = "MorphologicalAntialiasing";
@@ -30,9 +31,8 @@ namespace MorphologicalAntialiasing
         RTHandle m_BlendingWeightsTarget;
         RTHandle m_StencilTarget;
         SubPass m_SubPass;
+        EdgeDetectMode m_EdgeDetectMode;
 
-        public Vector2 Yolo;
-        
         public MorphologicalAntialiasingPass(Material detectEdgesMaterial, Material blendingWeightsMaterial,
             Material blendingMaterial)
         {
@@ -43,6 +43,7 @@ namespace MorphologicalAntialiasing
 
         public void SetPassData(PassData data)
         {
+            m_EdgeDetectMode = data.EdgeDetectMode;
             m_ColorTarget = data.ColorHandle;
             m_CopyColorTarget = data.CopyColorHandle;
             m_EdgesTarget = data.EdgesHandle;
@@ -54,10 +55,12 @@ namespace MorphologicalAntialiasing
             m_BlendingWeightsMaterial.SetTexture(ShaderIds._AreaLookupTexture, data.AreaLookupTexture);
             // Prevent zero iteration, would lead to infinite loop in shader.
             m_BlendingWeightsMaterial.SetInt(ShaderIds._MaxDistance, math.max(1, data.MaxDistance));
+            m_BlendingWeightsMaterial.SetInt(ShaderIds._MaxSearchSteps, math.max(1, data.MaxSearchSteps));
             m_BlendingMaterial.SetTexture(ShaderIds._BlendTexture, data.BlendingWeightsHandle);
-            
+
             var rt = data.ColorHandle.rt;
             var texelSize = new Vector2(1f / rt.width, 1f / rt.height);
+
             m_DetectEdgesMaterial.SetVector(ShaderIds._TexelSize, texelSize);
             m_BlendingWeightsMaterial.SetVector(ShaderIds._TexelSize, texelSize);
             m_BlendingMaterial.SetVector(ShaderIds._TexelSize, texelSize);
@@ -74,27 +77,24 @@ namespace MorphologicalAntialiasing
 
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
         {
-            m_BlendingMaterial.SetVector("_YOLO", Yolo);
-            
             Assert.IsNotNull(m_DetectEdgesMaterial);
 
             var cmd = CommandBufferPool.Get(k_Name);
-            //using (new ProfilingScope(cmd, m_ProfilingSampler))
+            using var scope = new ProfilingScope(cmd, m_ProfilingSampler);
 
             // Detect edges.
             CoreUtils.SetRenderTarget(cmd, m_EdgesTarget, m_StencilTarget, ClearFlag.ColorStencil);
-            BlitCameraTexture(cmd, m_ColorTarget, m_DetectEdgesMaterial, 0);
+            BlitCameraTexture(cmd, m_ColorTarget, m_DetectEdgesMaterial, (int)m_EdgeDetectMode);
 
             // Evaluate blending weights.
             CoreUtils.SetRenderTarget(cmd, m_BlendingWeightsTarget, m_StencilTarget, ClearFlag.Color);
             BlitCameraTexture(cmd, m_EdgesTarget, m_BlendingWeightsMaterial, 0);
-            
+
             // Blend with neighborhood.
             Blitter.BlitCameraTexture(cmd, m_ColorTarget, m_CopyColorTarget, m_BlendingMaterial, 0);
-
-
-            var finalBlitSrc = m_CopyColorTarget;
             
+            var finalBlitSrc = m_CopyColorTarget;
+
             switch (m_SubPass)
             {
                 case SubPass.Default:

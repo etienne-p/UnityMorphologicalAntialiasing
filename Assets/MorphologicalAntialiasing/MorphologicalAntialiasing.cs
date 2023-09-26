@@ -4,6 +4,7 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
+using UnityEngine.Serialization;
 
 namespace MorphologicalAntialiasing
 {
@@ -12,6 +13,12 @@ namespace MorphologicalAntialiasing
         Default,
         DetectEdges,
         BlendWeights
+    }
+
+    enum EdgeDetectMode
+    {
+        Depth = 0,
+        Luminance = 1
     }
 
     struct PassData
@@ -24,19 +31,19 @@ namespace MorphologicalAntialiasing
         public Texture AreaLookupTexture;
         public float Threshold;
         public int MaxDistance;
+        public int MaxSearchSteps;
+        public EdgeDetectMode EdgeDetectMode;
         public SubPass SubPass;
     }
-
-// TODO Handle domain reload? (resources issue)
 
     public class MorphologicalAntialiasing : ScriptableRendererFeature
     {
         [SerializeField, Range(0, 1)] float m_Threshold;
-        [SerializeField] int m_MaxSmooth = 9;
+        [SerializeField] EdgeDetectMode m_EdgeDetectMode;
         [SerializeField] int m_MaxDistance = 9;
+        [SerializeField] int m_MaxSearchSteps = 4;
         [SerializeField] SubPass m_SubPass;
         [SerializeField] RenderPassEvent m_RenderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
-        [SerializeField] Vector2 m_Yolo;
 
         Material m_DetectEdgesMaterial;
         Material m_BlendingWeightsMaterial;
@@ -51,9 +58,7 @@ namespace MorphologicalAntialiasing
         /// <inheritdoc/>
         public override void Create()
         {
-            m_MaxDistance = math.max(2, m_MaxDistance);
-            m_MaxSmooth = math.max(2, m_MaxSmooth);
-            AreaLookup.GenerateLookup(ref m_AreaLookupTexture, m_MaxDistance, m_MaxSmooth);
+            AreaLookup.GenerateLookup(ref m_AreaLookupTexture, math.max(2, m_MaxDistance));
 
             m_DetectEdgesMaterial = CoreUtils.CreateEngineMaterial(
                 LoadShader("Hidden/MorphologicalAntialiasing/DetectEdges"));
@@ -113,14 +118,14 @@ namespace MorphologicalAntialiasing
                     BlendingWeightsHandle = m_BlendingWeightsHandle,
                     StencilHandle = m_StencilHandle,
                     AreaLookupTexture = m_AreaLookupTexture,
+                    EdgeDetectMode = m_EdgeDetectMode,
                     MaxDistance = m_MaxDistance,
+                    MaxSearchSteps = m_MaxSearchSteps,
                     Threshold = m_Threshold,
                     SubPass = m_SubPass
                 };
 
                 m_RenderPass.SetPassData(passData);
-
-                m_RenderPass.Yolo = m_Yolo;
             }
         }
 

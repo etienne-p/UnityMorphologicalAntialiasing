@@ -6,9 +6,6 @@ TEXTURE2D_X(_BlendTexture);
 
 float2 _TexelSize;
 
-// TODO REMOVE
-float2 _YOLO;
-
 half4 Frag(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
@@ -36,6 +33,6 @@ half4 Frag(Varyings input) : SV_Target
     }
     else
     {
-        return SAMPLE_TEXTURE2D_X(COLOR_TEXTURE, sampler_LinearClamp, uv + _YOLO * _TexelSize);
+        return SAMPLE_TEXTURE2D_X(COLOR_TEXTURE, sampler_LinearClamp, uv);
     }
 }

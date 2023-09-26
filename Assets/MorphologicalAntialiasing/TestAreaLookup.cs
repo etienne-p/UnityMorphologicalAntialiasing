@@ -9,7 +9,6 @@ namespace MorphologicalAntialiasing
         Texture2D m_Lookup;
 
         [SerializeField] float m_GuiScale;
-        [SerializeField] float m_MaxSmooth;
         [SerializeField] int m_MaxDist;
 
         private void OnGUI()
@@ -23,7 +22,7 @@ namespace MorphologicalAntialiasing
 
         void OnEnable()
         {
-            AreaLookup.GenerateLookup(ref m_Lookup, m_MaxDist, m_MaxSmooth);
+            AreaLookup.GenerateLookup(ref m_Lookup, m_MaxDist);
         }
 
         void OnDisable()
@@ -34,7 +33,7 @@ namespace MorphologicalAntialiasing
 
         void OnValidate()
         {
-            AreaLookup.GenerateLookup(ref m_Lookup, m_MaxDist, m_MaxSmooth);
+            AreaLookup.GenerateLookup(ref m_Lookup, m_MaxDist);
         }
     }
 }

@@ -4,42 +4,14 @@
 TEXTURE2D_X(_AreaLookupTexture);
 float2 _TexelSize;
 uint _MaxDistance;
+uint _MaxSearchSteps;
 
 // Using a define to use a descriptive name.
 #define EDGES_TEXTURE _BlitTexture
 #define AREA_SIZE (_MaxDistance * 5)
 
-// Here we use bilinear filtering to check 2 pixels at once.
-float __Search(in float2 uv, in float2 stepMul, in float channel)
-{
-    uv += _TexelSize * stepMul * (1.5).xx;
-
-    float e = 0;
-
-    // TODO do-while?
-    uint i;
-    UNITY_LOOP
-    for (i = 0; i != _MaxDistance; ++i)
-    {
-        float2 edge = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, uv, 0).rg;
-        //e = edge[channel];
-        // TODO better way?
-        e = lerp(edge.x, edge.y, channel);
-        
-        //UNITY_FLATTEN
-        if (e < 0.9)
-        {
-            break;
-        }
-
-        uv += _TexelSize * stepMul * (2.0).xx;
-    }
-
-    return 2.0 * min(i + e, _MaxDistance);
-}
-
-// Here we use bilinear filtering to check 2 pixels at once.
-float Search(in float2 uv, in float2 stepMul, in float channel)
+// For reference. Not used at the moment.
+float SearchNaive(in float2 uv, in float2 stepMul, in float channel)
 {
     uint i;
     UNITY_LOOP
@@ -56,6 +28,32 @@ float Search(in float2 uv, in float2 stepMul, in float channel)
     }
 
     return i;
+}
+
+// Here we use bilinear filtering to check 2 pixels at once.
+float Search(in float2 uv, in float2 stepMul, in float channel)
+{
+    uv += _TexelSize * stepMul * (1.5).xx;
+
+    float e = 0;
+    uint i;
+    UNITY_LOOP
+    for (i = 0; i != _MaxSearchSteps; ++i)
+    {
+        float2 edge = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, uv, 0).rg;
+        // TODO better way?
+        e = lerp(edge.x, edge.y, channel);
+        
+        UNITY_FLATTEN
+        if (e < 0.9)
+        {
+            break;
+        }
+
+        uv += _TexelSize * stepMul * (2.0).xx;
+    }
+
+    return min(2.0 * (i + e), _MaxDistance);
 }
 
 float SearchXLeft(float2 uv)
@@ -106,8 +104,6 @@ half4 Frag(Varyings input) : SV_Target
         float e1 = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, coords.xy, 0).r;
         float e2 = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, coords.zw, 0).r;
         weights.rg = Area(abs(d), e1, e2);
-        //weights.rg = abs(d) / _MaxDistance;
-        //weights.rg = round(float2(e1, e2) * 4.0) * 0.25;//float2(e1, e2);
     }
 
     // Edge at north.
@@ -121,8 +117,6 @@ half4 Frag(Varyings input) : SV_Target
         float e1 = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, coords.xy, 0).g;
         float e2 = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, coords.zw, 0).g;
         weights.ba = Area(abs(d), e1, e2);
-        //weights.ba = abs(d) / _MaxDistance;
-        //weights.ba = round(float2(e1, e2) * 4.0) * 0.25;//float2(e1, e2);
     }
 
     return weights;

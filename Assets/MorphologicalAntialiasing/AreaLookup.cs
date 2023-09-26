@@ -125,7 +125,7 @@ namespace MorphologicalAntialiasing
             }
         }
 
-        static void FillSlopes(PixelData pxData, int maxDist, float maxSmooth, Line line1, Line line2)
+        static void FillSlopes(PixelData pxData, int maxDist, Line line1, Line line2)
         {
             for (var left = 0; left != maxDist; ++left)
             for (var right = 0; right != maxDist; ++right)
@@ -133,17 +133,7 @@ namespace MorphologicalAntialiasing
                 var area1 = line1.GetArea(left, right);
                 var area2 = line2.GetArea(left, right);
 
-                // Smoothing.
-                var l = left + right + 1;
-                var b1 = math.sqrt(area1 * 2f) * .5f;
-                var b2 = math.sqrt(area2 * 2f) * .5f;
-                // TODO is SMOOTH_MAX_DISTANCE = maxDist a good choice?
-                var p = math.saturate(l / maxSmooth);
-
-                //area1 = math.lerp(b1, area1, p);
-                //area2 = math.lerp(b2, area2, p);
-
-                pxData.SetPixel(left, right, (area1 + area2) / 2);
+                pxData.SetPixel(left, right, (area1 + area2) * .5f);
             }
         }
 
@@ -162,7 +152,7 @@ namespace MorphologicalAntialiasing
             return math.max(0, left + right) * .5f;
         }
 
-        public static void GenerateLookup(ref Texture2D tex, int maxDist, float maxSmooth)
+        public static void GenerateLookup(ref Texture2D tex, int maxDist)
         {
             var pxData = new PixelData(maxDist);
 
@@ -178,33 +168,33 @@ namespace MorphologicalAntialiasing
 
             // U Patterns.
             pxData.SetPattern(1, 1);
-            FillSlopes(pxData, maxDist, maxSmooth,
+            FillSlopes(pxData, maxDist,
                 new Line(-.5f, .5f, -5f, 0),
                 new Line(.5f, -.5f, -5f, 0));
             pxData.SetPattern(3, 3);
-            FillSlopes(pxData, maxDist, maxSmooth,
+            FillSlopes(pxData, maxDist,
                 new Line(.5f, -.5f, 0, .5f),
                 new Line(-.5f, .5f, 0, .5f));
 
             // T Patterns.
             pxData.SetPattern(0, 4);
-            FillSlopes(pxData, maxDist, maxSmooth,
+            FillSlopes(pxData, maxDist,
                 new Line(-.5f, .5f, 0, .5f),
                 new Line(.5f, -.5f, -.5f, 0f));
 
             // L-T Patterns.
             pxData.SetPattern(4, 1);
-            FillSlopes(pxData, maxDist, maxSmooth,
+            FillSlopes(pxData, maxDist,
                 new Line(.5f, -.5f),
                 new Line(-.5f, .5f, -.5f, 0));
             pxData.SetPattern(4, 3);
-            FillSlopes(pxData, maxDist, maxSmooth,
+            FillSlopes(pxData, maxDist,
                 new Line(-.5f, .5f),
                 new Line(.5f, -.5f, 0, .5f));
 
             // T-T Patterns.
             pxData.SetPattern(4, 4);
-            FillSlopes(pxData, maxDist, maxSmooth,
+            FillSlopes(pxData, maxDist,
                 new Line(-.5f, .5f),
                 new Line(.5f, -.5f));
 
