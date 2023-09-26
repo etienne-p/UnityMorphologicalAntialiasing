@@ -4,11 +4,10 @@ using UnityEngine;
 using UnityEngine.Experimental.Rendering;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
-using UnityEngine.Serialization;
 
 namespace MorphologicalAntialiasing
 {
-    enum SubPass
+    enum IntermediateBufferType
     {
         Default,
         DetectEdges,
@@ -33,16 +32,16 @@ namespace MorphologicalAntialiasing
         public int MaxDistance;
         public int MaxSearchSteps;
         public EdgeDetectMode EdgeDetectMode;
-        public SubPass SubPass;
+        public IntermediateBufferType IntermediateBufferType;
     }
 
-    public class MorphologicalAntialiasing : ScriptableRendererFeature
+    class MorphologicalAntialiasing : ScriptableRendererFeature
     {
         [SerializeField, Range(0, 1)] float m_Threshold;
         [SerializeField] EdgeDetectMode m_EdgeDetectMode;
         [SerializeField] int m_MaxDistance = 9;
         [SerializeField] int m_MaxSearchSteps = 4;
-        [SerializeField] SubPass m_SubPass;
+        [SerializeField] IntermediateBufferType m_IntermediateBufferType;
         [SerializeField] RenderPassEvent m_RenderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
 
         Material m_DetectEdgesMaterial;
@@ -55,7 +54,6 @@ namespace MorphologicalAntialiasing
         MorphologicalAntialiasingPass m_RenderPass;
         Texture2D m_AreaLookupTexture;
 
-        /// <inheritdoc/>
         public override void Create()
         {
             AreaLookup.GenerateLookup(ref m_AreaLookupTexture, math.max(2, m_MaxDistance));
@@ -86,6 +84,11 @@ namespace MorphologicalAntialiasing
 
         public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
         {
+            if (renderingData.cameraData.cameraType != CameraType.Game)
+            {
+                return;
+            }
+
             var cameraTargetDescriptor = renderingData.cameraData.cameraTargetDescriptor;
             cameraTargetDescriptor.msaaSamples = 1;
             cameraTargetDescriptor.depthBufferBits = (int)DepthBits.None;
@@ -106,27 +109,27 @@ namespace MorphologicalAntialiasing
             RenderingUtils.ReAllocateIfNeeded(ref m_StencilHandle, stencilDescriptor, FilterMode.Bilinear,
                 TextureWrapMode.Clamp, name: "Stencil");
 
-            if (renderingData.cameraData.cameraType == CameraType.Game)
+            m_RenderPass.ConfigureInput(ScriptableRenderPassInput.Color);
+
+            // Gives more precise control for small values, while preserving range.
+            var threshold = math.pow(m_Threshold, 4);
+            
+            var passData = new PassData
             {
-                m_RenderPass.ConfigureInput(ScriptableRenderPassInput.Color);
+                ColorHandle = renderer.cameraColorTargetHandle,
+                CopyColorHandle = m_CopyColorHandle,
+                EdgesHandle = m_EdgesHandle,
+                BlendingWeightsHandle = m_BlendingWeightsHandle,
+                StencilHandle = m_StencilHandle,
+                AreaLookupTexture = m_AreaLookupTexture,
+                EdgeDetectMode = m_EdgeDetectMode,
+                MaxDistance = m_MaxDistance,
+                MaxSearchSteps = m_MaxSearchSteps,
+                Threshold = threshold,
+                IntermediateBufferType = m_IntermediateBufferType
+            };
 
-                var passData = new PassData
-                {
-                    ColorHandle = renderer.cameraColorTargetHandle,
-                    CopyColorHandle = m_CopyColorHandle,
-                    EdgesHandle = m_EdgesHandle,
-                    BlendingWeightsHandle = m_BlendingWeightsHandle,
-                    StencilHandle = m_StencilHandle,
-                    AreaLookupTexture = m_AreaLookupTexture,
-                    EdgeDetectMode = m_EdgeDetectMode,
-                    MaxDistance = m_MaxDistance,
-                    MaxSearchSteps = m_MaxSearchSteps,
-                    Threshold = m_Threshold,
-                    SubPass = m_SubPass
-                };
-
-                m_RenderPass.SetPassData(passData);
-            }
+            m_RenderPass.SetPassData(passData);
         }
 
         public override void AddRenderPasses(ScriptableRenderer renderer, ref RenderingData renderingData)

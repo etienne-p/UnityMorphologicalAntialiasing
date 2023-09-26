@@ -33,7 +33,7 @@ half4 FragDepth (Varyings input) : SV_Target
     float4 edges = step(_Threshold.xxxx, delta);
 
     // Saves a clear target, but we don;t need to write alot of pixels, maybe better to clear explicitely.
-    if (dot(edges, (1.0).xxxx) == 0.0)
+    if (dot(edges, 1.0) == 0.0)
     {
         discard;
     }
@@ -56,7 +56,7 @@ half4 FragLuminance (Varyings input) : SV_Target
     float4 edges = step(_Threshold.xxxx, delta);
 
     // Saves a clear target, but we don;t need to write alot of pixels, maybe better to clear explicitely.
-    if (dot(edges, (1.0).xxxx) == 0.0)
+    if (dot(edges, 1.0) == 0.0)
     {
         discard;
     }

@@ -6,7 +6,7 @@ using UnityEngine.Rendering;
 
 namespace MorphologicalAntialiasing
 {
-    public static class AreaLookup
+    static class AreaLookup
     {
         readonly struct Line
         {
@@ -45,10 +45,9 @@ namespace MorphologicalAntialiasing
                 var area = PixelCoverage(pxLeftY, pxRightY);
                 var areaOpp = PixelCoverage(-pxLeftY, -pxRightY);
 
-                // TODO Worth the 2 steps method?
                 // The purpose of clamp is to limit area.
-                // But in some case the calculation below can lead to increased area,
-                // when the areas are triangles.
+                // But in some cases the calculation below can lead to increased area,
+                // when triangles become trapezoids.
                 pxLeftY = math.clamp(pxLeftY, m_ClampMin, m_ClampMax);
                 pxRightY = math.clamp(pxRightY, m_ClampMin, m_ClampMax);
                 area = math.min(area, PixelCoverage(pxLeftY, pxRightY));
@@ -58,7 +57,7 @@ namespace MorphologicalAntialiasing
             }
         }
 
-        // Helps for code readability, designed to be temporary. (see Alloc.)
+        // Helps with code readability, designed to be temporary. (see Allocator.Temp)
         struct PixelData
         {
             readonly int m_MaxDist;
@@ -88,19 +87,19 @@ namespace MorphologicalAntialiasing
                 m_OffsetX = x * m_MaxDist;
             }
 
-            // TODO saturate useless
+            // The lookup texture is symmetric along its diagonal, so we set 2 pixels at once.
             public void SetPixel(int x, int y, float2 value)
             {
                 var idx0 = (m_OffsetY + y) * m_Size + m_OffsetX + x;
-                m_Data[idx0 * 4] = (byte)(math.saturate(value.x) * 255f);
-                m_Data[idx0 * 4 + 1] = (byte)(math.saturate(value.y) * 255f);
+                m_Data[idx0 * 4] = (byte)(value.x * 255f);
+                m_Data[idx0 * 4 + 1] = (byte)(value.y * 255f);
 
                 var idx1 = (m_OffsetX + x) * m_Size + m_OffsetY + y;
-                m_Data[idx1 * 4] = (byte)(math.saturate(value.x) * 255f);
-                m_Data[idx1 * 4 + 1] = (byte)(math.saturate(value.y) * 255f);
+                m_Data[idx1 * 4] = (byte)(value.x * 255f);
+                m_Data[idx1 * 4 + 1] = (byte)(value.y * 255f);
             }
 
-            public void CreateTexture(ref Texture2D tex)
+            public void UpdateTexture(ref Texture2D tex)
             {
                 if (tex == null || tex.width != m_Size || tex.height != m_Size)
                 {
@@ -114,8 +113,6 @@ namespace MorphologicalAntialiasing
             }
         }
 
-        // TODO smooth instead of clamp
-        // yLeft, yRight -> line Y on left and right edges of the pixels row.
         static void FillSlope(PixelData pxData, int maxDist, Line line)
         {
             for (var left = 0; left != maxDist; ++left)
@@ -198,7 +195,7 @@ namespace MorphologicalAntialiasing
                 new Line(-.5f, .5f),
                 new Line(.5f, -.5f));
 
-            pxData.CreateTexture(ref tex);
+            pxData.UpdateTexture(ref tex);
         }
     }
 }

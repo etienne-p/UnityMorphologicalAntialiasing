@@ -80,7 +80,6 @@ float2 Area(float2 dist, float e1, float e2)
 {
     float2 pxCoords = _MaxDistance * round(float2(e1, e2) * 4.0) + dist;
     float2 texCoords = pxCoords / (AREA_SIZE - 1);
-    //texCoords.y = 1 - texCoords.y;
     return SAMPLE_TEXTURE2D_LOD(_AreaLookupTexture, sampler_PointClamp, texCoords, 0).rg;
 }
 

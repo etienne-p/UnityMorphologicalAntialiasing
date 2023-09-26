@@ -3,15 +3,18 @@ using UnityEngine.Rendering;
 
 namespace MorphologicalAntialiasing
 {
+    /// <summary>
+    /// A simple component meant to visualize the lookup texture.
+    /// </summary>
     [ExecuteAlways]
-    public class TestAreaLookup : MonoBehaviour
+    class TestAreaLookup : MonoBehaviour
     {
-        Texture2D m_Lookup;
-
         [SerializeField] float m_GuiScale;
         [SerializeField] int m_MaxDist;
 
-        private void OnGUI()
+        Texture2D m_Lookup;
+
+        void OnGUI()
         {
             if (m_Lookup != null)
             {

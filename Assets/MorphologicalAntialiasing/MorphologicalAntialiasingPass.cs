@@ -30,7 +30,7 @@ namespace MorphologicalAntialiasing
         RTHandle m_EdgesTarget;
         RTHandle m_BlendingWeightsTarget;
         RTHandle m_StencilTarget;
-        SubPass m_SubPass;
+        IntermediateBufferType m_IntermediateBufferType;
         EdgeDetectMode m_EdgeDetectMode;
 
         public MorphologicalAntialiasingPass(Material detectEdgesMaterial, Material blendingWeightsMaterial,
@@ -49,7 +49,7 @@ namespace MorphologicalAntialiasing
             m_EdgesTarget = data.EdgesHandle;
             m_BlendingWeightsTarget = data.BlendingWeightsHandle;
             m_StencilTarget = data.StencilHandle;
-            m_SubPass = data.SubPass;
+            m_IntermediateBufferType = data.IntermediateBufferType;
 
             m_DetectEdgesMaterial.SetFloat(ShaderIds._Threshold, data.Threshold);
             m_BlendingWeightsMaterial.SetTexture(ShaderIds._AreaLookupTexture, data.AreaLookupTexture);
@@ -69,10 +69,6 @@ namespace MorphologicalAntialiasing
         public override void OnCameraSetup(CommandBuffer cmd, ref RenderingData renderingData)
         {
             ConfigureTarget(m_ColorTarget);
-        }
-
-        public override void OnCameraCleanup(CommandBuffer cmd)
-        {
         }
 
         public override void Execute(ScriptableRenderContext context, ref RenderingData renderingData)
@@ -95,14 +91,15 @@ namespace MorphologicalAntialiasing
             
             var finalBlitSrc = m_CopyColorTarget;
 
-            switch (m_SubPass)
+            // We allow the visualization of intermediate buffers, no relevant added cost.
+            switch (m_IntermediateBufferType)
             {
-                case SubPass.Default:
+                case IntermediateBufferType.Default:
                     break;
-                case SubPass.DetectEdges:
+                case IntermediateBufferType.DetectEdges:
                     finalBlitSrc = m_EdgesTarget;
                     break;
-                case SubPass.BlendWeights:
+                case IntermediateBufferType.BlendWeights:
                     finalBlitSrc = m_BlendingWeightsTarget;
                     break;
             }
@@ -110,11 +107,10 @@ namespace MorphologicalAntialiasing
             Blitter.BlitCameraTexture(cmd, finalBlitSrc, m_ColorTarget);
 
             context.ExecuteCommandBuffer(cmd);
-            cmd.Clear();
-
             CommandBufferPool.Release(cmd);
         }
 
+        // Similar to CoreUtils, but we isolate SetRenderTarget as we use a stencil buffer as well. 
         static void BlitCameraTexture(CommandBuffer cmd, RTHandle source, Material material, int pass)
         {
             var viewportScale = source.useScaling
