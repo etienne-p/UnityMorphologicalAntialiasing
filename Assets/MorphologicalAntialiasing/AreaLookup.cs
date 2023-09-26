@@ -140,26 +140,26 @@ namespace MorphologicalAntialiasing
                 // TODO is SMOOTH_MAX_DISTANCE = maxDist a good choice?
                 var p = math.saturate(l / maxSmooth);
 
-                area1 = math.lerp(b1, area1, p);
-                area2 = math.lerp(b2, area2, p);
+                //area1 = math.lerp(b1, area1, p);
+                //area2 = math.lerp(b2, area2, p);
 
-                pxData.SetPixel(left, right, area1 + area2);
+                pxData.SetPixel(left, right, (area1 + area2) / 2);
             }
         }
 
         static float PixelCoverage(float left, float right)
         {
-            // A trapezoid.
-            if (left * right >= 0)
+            // Two triangles, a: triangle side along edge.
+            if (left * right < 0)
             {
-                return math.max(0, left + right) * .5f;
+                var pos = math.max(left, right);
+                var neg = math.min(left, right);
+                var a = pos / (pos - neg);
+                return math.max(0, pos * a * .5f);
             }
 
-            // Two triangles, a: triangle side along edge.
-            var pos = math.max(left, right);
-            var neg = math.min(left, right);
-            var a = pos / (pos - neg);
-            return math.max(0, pos * a * .5f);
+            // A trapezoid.
+            return math.max(0, left + right) * .5f;
         }
 
         public static void GenerateLookup(ref Texture2D tex, int maxDist, float maxSmooth)

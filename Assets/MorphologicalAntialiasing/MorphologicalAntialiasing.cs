@@ -62,17 +62,6 @@ namespace MorphologicalAntialiasing
             m_BlendingMaterial = CoreUtils.CreateEngineMaterial(
                 LoadShader("Hidden/MorphologicalAntialiasing/Blending"));
 
-            // TODO Use same format as camera.
-            m_CopyColorHandle = RTHandles.Alloc(Vector2.one, colorFormat: GraphicsFormat.R8G8B8A8_UNorm,
-                dimension: TextureDimension.Tex2D, name: "CopyColor");
-            // TODO No need for 4 channels
-            m_EdgesHandle = RTHandles.Alloc(Vector2.one, colorFormat: GraphicsFormat.R8G8B8A8_UNorm,
-                dimension: TextureDimension.Tex2D, name: "Edges");
-            m_BlendingWeightsHandle = RTHandles.Alloc(Vector2.one, colorFormat: GraphicsFormat.R8G8B8A8_UNorm,
-                dimension: TextureDimension.Tex2D, name: "BlendingWeights");
-            m_StencilHandle = RTHandles.Alloc(Vector2.one, depthBufferBits: DepthBits.Depth32,
-                dimension: TextureDimension.Tex2D, name: "Stencil");
-
             m_RenderPass = new MorphologicalAntialiasingPass(
                 m_DetectEdgesMaterial, m_BlendingWeightsMaterial, m_BlendingMaterial);
             m_RenderPass.renderPassEvent = m_RenderPassEvent;
@@ -92,6 +81,26 @@ namespace MorphologicalAntialiasing
 
         public override void SetupRenderPasses(ScriptableRenderer renderer, in RenderingData renderingData)
         {
+            var cameraTargetDescriptor = renderingData.cameraData.cameraTargetDescriptor;
+            cameraTargetDescriptor.msaaSamples = 1;
+            cameraTargetDescriptor.depthBufferBits = (int)DepthBits.None;
+            var edgesDescriptor = cameraTargetDescriptor;
+            edgesDescriptor.graphicsFormat = GraphicsFormat.R8G8B8A8_UNorm;
+            var weightsDescriptor = cameraTargetDescriptor;
+            weightsDescriptor.graphicsFormat = GraphicsFormat.R8G8B8A8_UNorm;
+            var stencilDescriptor = cameraTargetDescriptor;
+            stencilDescriptor.graphicsFormat = GraphicsFormat.None;
+            stencilDescriptor.depthBufferBits = (int)DepthBits.Depth32;
+
+            RenderingUtils.ReAllocateIfNeeded(ref m_CopyColorHandle, cameraTargetDescriptor, FilterMode.Bilinear,
+                TextureWrapMode.Clamp, name: "CopyColor");
+            RenderingUtils.ReAllocateIfNeeded(ref m_EdgesHandle, edgesDescriptor, FilterMode.Bilinear,
+                TextureWrapMode.Clamp, name: "Edges");
+            RenderingUtils.ReAllocateIfNeeded(ref m_BlendingWeightsHandle, weightsDescriptor, FilterMode.Bilinear,
+                TextureWrapMode.Clamp, name: "BlendingWeights");
+            RenderingUtils.ReAllocateIfNeeded(ref m_StencilHandle, stencilDescriptor, FilterMode.Bilinear,
+                TextureWrapMode.Clamp, name: "Stencil");
+
             if (renderingData.cameraData.cameraType == CameraType.Game)
             {
                 m_RenderPass.ConfigureInput(ScriptableRenderPassInput.Color);

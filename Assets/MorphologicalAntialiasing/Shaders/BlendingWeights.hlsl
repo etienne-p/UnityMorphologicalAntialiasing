@@ -82,6 +82,7 @@ float2 Area(float2 dist, float e1, float e2)
 {
     float2 pxCoords = _MaxDistance * round(float2(e1, e2) * 4.0) + dist;
     float2 texCoords = pxCoords / (AREA_SIZE - 1);
+    //texCoords.y = 1 - texCoords.y;
     return SAMPLE_TEXTURE2D_LOD(_AreaLookupTexture, sampler_PointClamp, texCoords, 0).rg;
 }
 
@@ -106,7 +107,7 @@ half4 Frag(Varyings input) : SV_Target
         float e2 = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, coords.zw, 0).r;
         weights.rg = Area(abs(d), e1, e2);
         //weights.rg = abs(d) / _MaxDistance;
-        //weights.rg = float2(e1, e2);
+        //weights.rg = round(float2(e1, e2) * 4.0) * 0.25;//float2(e1, e2);
     }
 
     // Edge at north.
@@ -121,7 +122,7 @@ half4 Frag(Varyings input) : SV_Target
         float e2 = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, coords.zw, 0).g;
         weights.ba = Area(abs(d), e1, e2);
         //weights.ba = abs(d) / _MaxDistance;
-        //weights.ba = float2(e1, e2);
+        //weights.ba = round(float2(e1, e2) * 4.0) * 0.25;//float2(e1, e2);
     }
 
     return weights;
