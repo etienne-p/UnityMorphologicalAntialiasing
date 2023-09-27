@@ -1,4 +1,4 @@
-﻿using Unity.Mathematics;
+using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Assertions;
 using UnityEngine.Rendering;
@@ -34,7 +34,7 @@ namespace MorphologicalAntialiasing
         EdgeDetectMode m_EdgeDetectMode;
 
         public MorphologicalAntialiasingPass(Material detectEdgesMaterial, Material blendingWeightsMaterial,
-            Material blendingMaterial)
+                                             Material blendingMaterial)
         {
             m_DetectEdgesMaterial = detectEdgesMaterial;
             m_BlendingWeightsMaterial = blendingWeightsMaterial;
@@ -88,7 +88,7 @@ namespace MorphologicalAntialiasing
 
             // Blend with neighborhood.
             Blitter.BlitCameraTexture(cmd, m_ColorTarget, m_CopyColorTarget, m_BlendingMaterial, 0);
-            
+
             var finalBlitSrc = m_CopyColorTarget;
 
             // We allow the visualization of intermediate buffers, no relevant added cost.
@@ -110,7 +110,7 @@ namespace MorphologicalAntialiasing
             CommandBufferPool.Release(cmd);
         }
 
-        // Similar to CoreUtils, but we isolate SetRenderTarget as we use a stencil buffer as well. 
+        // Similar to CoreUtils, but we isolate SetRenderTarget as we use a stencil buffer as well.
         static void BlitCameraTexture(CommandBuffer cmd, RTHandle source, Material material, int pass)
         {
             var viewportScale = source.useScaling

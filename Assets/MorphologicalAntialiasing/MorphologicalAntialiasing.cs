@@ -37,12 +37,11 @@ namespace MorphologicalAntialiasing
 
     class MorphologicalAntialiasing : ScriptableRendererFeature
     {
-        [SerializeField, Range(0, 1)] float m_Threshold;
-        [SerializeField] EdgeDetectMode m_EdgeDetectMode;
-        [SerializeField] int m_MaxDistance = 9;
-        [SerializeField] int m_MaxSearchSteps = 4;
-        [SerializeField] IntermediateBufferType m_IntermediateBufferType;
         [SerializeField] RenderPassEvent m_RenderPassEvent = RenderPassEvent.BeforeRenderingPostProcessing;
+        [SerializeField] IntermediateBufferType m_IntermediateBufferType;
+        [SerializeField] EdgeDetectMode m_EdgeDetectMode;
+        [SerializeField, Range(0, 1)] float m_Threshold;
+        [SerializeField, Range(4, 32)] int m_MaxDistance = 18;
 
         Material m_DetectEdgesMaterial;
         Material m_BlendingWeightsMaterial;
@@ -92,13 +91,18 @@ namespace MorphologicalAntialiasing
             var cameraTargetDescriptor = renderingData.cameraData.cameraTargetDescriptor;
             cameraTargetDescriptor.msaaSamples = 1;
             cameraTargetDescriptor.depthBufferBits = (int)DepthBits.None;
+
             var edgesDescriptor = cameraTargetDescriptor;
             edgesDescriptor.graphicsFormat = GraphicsFormat.R8G8B8A8_UNorm;
+
             var weightsDescriptor = cameraTargetDescriptor;
             weightsDescriptor.graphicsFormat = GraphicsFormat.R8G8B8A8_UNorm;
+
+            // A bit wasteful as we only need the stencil buffer (not depth).
             var stencilDescriptor = cameraTargetDescriptor;
             stencilDescriptor.graphicsFormat = GraphicsFormat.None;
             stencilDescriptor.depthBufferBits = (int)DepthBits.Depth32;
+            stencilDescriptor.stencilFormat = GraphicsFormat.R8_UInt;
 
             RenderingUtils.ReAllocateIfNeeded(ref m_CopyColorHandle, cameraTargetDescriptor, FilterMode.Bilinear,
                 TextureWrapMode.Clamp, name: "CopyColor");
@@ -113,7 +117,7 @@ namespace MorphologicalAntialiasing
 
             // Gives more precise control for small values, while preserving range.
             var threshold = math.pow(m_Threshold, 4);
-            
+
             var passData = new PassData
             {
                 ColorHandle = renderer.cameraColorTargetHandle,
@@ -124,7 +128,7 @@ namespace MorphologicalAntialiasing
                 AreaLookupTexture = m_AreaLookupTexture,
                 EdgeDetectMode = m_EdgeDetectMode,
                 MaxDistance = m_MaxDistance,
-                MaxSearchSteps = m_MaxSearchSteps,
+                MaxSearchSteps = m_MaxDistance / 2 - 2,
                 Threshold = threshold,
                 IntermediateBufferType = m_IntermediateBufferType
             };

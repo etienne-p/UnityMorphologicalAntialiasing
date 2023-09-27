@@ -1,4 +1,4 @@
-﻿using Unity.Collections;
+using Unity.Collections;
 using Unity.Mathematics;
 using UnityEngine;
 using UnityEngine.Experimental.Rendering;
@@ -116,22 +116,22 @@ namespace MorphologicalAntialiasing
         static void FillSlope(PixelData pxData, int maxDist, Line line)
         {
             for (var left = 0; left != maxDist; ++left)
-            for (var right = 0; right != maxDist; ++right)
-            {
-                pxData.SetPixel(left, right, line.GetArea(left, right));
-            }
+                for (var right = 0; right != maxDist; ++right)
+                {
+                    pxData.SetPixel(left, right, line.GetArea(left, right));
+                }
         }
 
         static void FillSlopes(PixelData pxData, int maxDist, Line line1, Line line2)
         {
             for (var left = 0; left != maxDist; ++left)
-            for (var right = 0; right != maxDist; ++right)
-            {
-                var area1 = line1.GetArea(left, right);
-                var area2 = line2.GetArea(left, right);
+                for (var right = 0; right != maxDist; ++right)
+                {
+                    var area1 = line1.GetArea(left, right);
+                    var area2 = line2.GetArea(left, right);
 
-                pxData.SetPixel(left, right, (area1 + area2) * .5f);
-            }
+                    pxData.SetPixel(left, right, (area1 + area2) * .5f);
+                }
         }
 
         static float PixelCoverage(float left, float right)
