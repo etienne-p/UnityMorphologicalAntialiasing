@@ -25,7 +25,7 @@ The technique comprises 3 full-screen steps:
 
 * **Render Pass Event**, the event scheduling the pass within frame rendering. Typically you'd use "BeforeRenderingPostProcessing". By that point, no subsequent step should create "jaggies", and post process effects may interfere with edge detection.
 * **Intermediate Buffer Type**, lets you select which of the technique's 3 steps you'd like to visualize. For example, looking at the edges buffer may help adjusting threshold.
-* **Edge Detect Mode**, the method used for edge detection. We implement both depth and luminance based edge detection. So far we obtained better results with depth. Luminance based edge detection tends to struggle to isolate relevant edges wich may lead to artefacts and unnecessary processing of many pixels.
+* **Edge Detect Mode**, the method used for edge detection. We implement depth, luminance and normals based edge detection. So far we obtained better results with depth. Luminance based edge detection tends to struggle to isolate relevant edges wich may lead to artefacts and unnecessary processing of many pixels. Note that the normals buffer is only available in deferred rendering and is accessed through reflection, which is fragile.
 * **Threshold**, the threshold used for edge detection.
 * **Max Distance**, the maximal distance in pixels used for pattern detection.
 
@@ -45,7 +45,7 @@ Below is a view of the intermediate buffers used.
 
 ### Possible Improvements
 
-So far, our edge detection technique requires improvements. We mentioned that depth gives more reliable results than luminance. Yet, it fails to catch some relevant edges. We could also improve the coverage lookup texture generation for better blending between patterns.
+So far, our edge detection technique requires improvements. We mentioned that depth gives more reliable results than luminance or normals. Yet, it fails to catch some relevant edges. We could also improve the coverage lookup texture generation for better blending between patterns.
 
 ## Results
 
