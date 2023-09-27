@@ -16,6 +16,7 @@ namespace MorphologicalAntialiasing
             public static readonly int _AreaLookupTexture = Shader.PropertyToID("_AreaLookupTexture");
             public static readonly int _MaxDistance = Shader.PropertyToID("_MaxDistance");
             public static readonly int _MaxSearchSteps = Shader.PropertyToID("_MaxSearchSteps");
+            public static readonly int _NormalsTexture = Shader.PropertyToID("_NormalsTexture");
         }
 
         const string k_Name = "MorphologicalAntialiasing";
@@ -50,6 +51,11 @@ namespace MorphologicalAntialiasing
             m_BlendingWeightsTarget = data.BlendingWeightsHandle;
             m_StencilTarget = data.StencilHandle;
             m_IntermediateBufferType = data.IntermediateBufferType;
+
+            if (m_EdgeDetectMode == EdgeDetectMode.Normals)
+            {
+                m_DetectEdgesMaterial.SetTexture(ShaderIds._NormalsTexture, data.NormalsHandle);
+            }
 
             m_DetectEdgesMaterial.SetFloat(ShaderIds._Threshold, data.Threshold);
             m_BlendingWeightsMaterial.SetTexture(ShaderIds._AreaLookupTexture, data.AreaLookupTexture);

@@ -6,7 +6,7 @@ TEXTURE2D_X(_BlendTexture);
 
 float2 _TexelSize;
 
-half4 Frag(Varyings input) : SV_Target
+float4 Frag(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
     float2 uv = input.texcoord.xy;

@@ -3,6 +3,7 @@
 #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/DeclareDepthTexture.hlsl"
 
 TEXTURE2D_X(_CameraOpaqueTexture);
+TEXTURE2D_X(_NormalsTexture);
 
 float2 _TexelSize;
 float _Threshold;
@@ -18,7 +19,12 @@ float SampleLuminance(float2 uv)
     return 0.2126 * color.r + 0.7152 * color.g + 0.0722 * color.b;
 }
 
-half4 FragDepth (Varyings input) : SV_Target
+float SampleNormal(float2 uv)
+{
+    return SAMPLE_TEXTURE2D_X_LOD(_NormalsTexture, sampler_PointClamp, uv, 0);
+}
+
+float4 FragDepth(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
     float2 uv = input.texcoord.xy;
@@ -32,7 +38,6 @@ half4 FragDepth (Varyings input) : SV_Target
     float4 delta = abs(depth.xxxx - float4(depthLeft, depthTop, depthRight, depthBottom));
     float4 edges = step(_Threshold.xxxx, delta);
 
-    // Saves a clear target, but we don;t need to write alot of pixels, maybe better to clear explicitely.
     if (dot(edges, 1.0) == 0.0)
     {
         discard;
@@ -41,7 +46,7 @@ half4 FragDepth (Varyings input) : SV_Target
     return float4(edges.xy, 0, 1);
 }
 
-half4 FragLuminance (Varyings input) : SV_Target
+float4 FragLuminance(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
     float2 uv = input.texcoord.xy;
@@ -55,7 +60,28 @@ half4 FragLuminance (Varyings input) : SV_Target
     float4 delta = abs(lum.xxxx - float4(lumLeft, lumTop, lumRight, lumBottom));
     float4 edges = step(_Threshold.xxxx, delta);
 
-    // Saves a clear target, but we don;t need to write alot of pixels, maybe better to clear explicitely.
+    if (dot(edges, 1.0) == 0.0)
+    {
+        discard;
+    }
+    
+    return float4(edges.xy, 0, 1);
+}
+
+float4 FragNormal(Varyings input) : SV_Target
+{
+    UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
+    float2 uv = input.texcoord.xy;
+
+    float normal =       SampleNormal(input.texcoord.xy);
+    float normalLeft =   SampleNormal(uv + _TexelSize * float2(-1,  0));
+    float normalTop =    SampleNormal(uv + _TexelSize * float2( 0, -1));
+    float normalRight =  SampleNormal(uv + _TexelSize * float2( 1,  0));
+    float normalBottom = SampleNormal(uv + _TexelSize * float2( 0,  1));
+
+    float4 delta = abs(normal.xxxx - float4(normalLeft, normalTop, normalRight, normalBottom));
+    float4 edges = step(_Threshold.xxxx, delta);
+
     if (dot(edges, 1.0) == 0.0)
     {
         discard;

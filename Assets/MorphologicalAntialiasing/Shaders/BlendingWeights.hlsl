@@ -83,7 +83,7 @@ float2 Area(float2 dist, float e1, float e2)
     return SAMPLE_TEXTURE2D_LOD(_AreaLookupTexture, sampler_PointClamp, texCoords, 0).rg;
 }
 
-half4 Frag(Varyings input) : SV_Target
+float4 Frag(Varyings input) : SV_Target
 {
     UNITY_SETUP_STEREO_EYE_INDEX_POST_VERTEX(input);
     float2 uv = input.texcoord.xy;
