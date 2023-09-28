@@ -25,15 +25,26 @@ The technique comprises 3 full-screen steps:
 
 * **Render Pass Event**, the event scheduling the pass within frame rendering. Typically you'd use "BeforeRenderingPostProcessing". By that point, no subsequent step should create "jaggies", and post process effects may interfere with edge detection.
 * **Intermediate Buffer Type**, lets you select which of the technique's 3 steps you'd like to visualize. For example, looking at the edges buffer may help adjusting threshold.
-* **Edge Detect Mode**, the method used for edge detection. We implement depth, luminance and normals based edge detection. So far we obtained better results with depth. Luminance based edge detection tends to struggle to isolate relevant edges wich may lead to artefacts and unnecessary processing of many pixels. Note that the normals buffer is only available in deferred rendering and is accessed through reflection, which is fragile.
+* **Edge Detect Mode**, the method used for edge detection. We elaborate below.
 * **Threshold**, the threshold used for edge detection.
 * **Max Distance**, the maximal distance in pixels used for pattern detection.
+
+### Edge Detection Modes
+
+We offer 4 edge detection modes:
+
+* **Depth**, uses the depth buffer.
+* **Luminance**, uses the color buffer.
+* **Normals**, uses the normals buffer.
+* **DepthAndNormals**, uses a combination of normals and depth buffer.
+
+ In our tests, **DepthAndNormals** led to the best results, followed by **Depth**. Generally the depth buffer gives good edges, but may fail to catch all relevant edges. The normals buffer comes as a useful addition. We look at the normalized angle between adjacent normals. Luminance based edge detection tends to struggle to isolate relevant edges wich may lead to artefacts and unnecessary processing of many pixels. Note that the depth and normals buffer are only available in deferred rendering.
 
 Typically, higher maximal distances (up to a plateau) will lead to better results, at the cost of extra GPU computations. It should be tuned according to the nature of the content and performance budget.
 
 ## Implementation
 
-The technique is implemented as a `ScriptableRendererFeature` named `MorphologicalAntialiasing`. It uses one pass named `MorphologicalAntialiasingPass`. It uses 3 shaders, one for each of the 3 full-screen steps. Those are very close to the examples provided in the book, only adapted for integration with Unity/URP. Shaders are split in a `.shader` and `.hlsl` file. This lets us separate shaderlab properties and classic shader code. It also makes for cleaner code when implementing multiple passes.
+The technique is implemented as a `ScriptableRendererFeature` named `MorphologicalAntialiasing`. It uses one pass named `MorphologicalAntialiasingPass`. It uses 3 shaders, one for each of the 3 full-screen steps. Those are very close to the examples provided in the book (except maybe for edge detection), only adapted for integration with Unity/URP. Shaders are split in a `.shader` and `.hlsl` file. This lets us separate shaderlab properties and classic shader code. It also makes for cleaner code when implementing multiple passes.
 
 The technique uses a lookup texture storing pixel coverages for all handled patterns. We implemented the generation of this texture in `AreaLookup`. It is recalculated whenever **Max Distance** changes. We provide a simple `TestAreaLookup` component to test this lookup generation in isolation.
 
@@ -42,10 +53,6 @@ Below is a view of the intermediate buffers used.
 | Edges | Stencil | Blending Weights |
 |---|---|---|
 | ![Edges](./Images/edges.png) | ![Stencil](./Images/stencil.png) | ![Blending Weights](./Images/blending-weights.png) |
-
-### Possible Improvements
-
-So far, our edge detection technique requires improvements. We mentioned that depth gives more reliable results than luminance or normals. Yet, it fails to catch some relevant edges. We could also improve the coverage lookup texture generation for better blending between patterns.
 
 ## Results
 

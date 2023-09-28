@@ -18,13 +18,13 @@ namespace MorphologicalAntialiasing
     {
         Depth = 0,
         Luminance = 1,
-        Normals = 2
+        Normals = 2,
+        DepthAndNormals = 3
     }
 
     struct PassData
     {
         public RTHandle ColorHandle;
-        public RTHandle NormalsHandle;
         public RTHandle CopyColorHandle;
         public RTHandle EdgesHandle;
         public RTHandle BlendingWeightsHandle;
@@ -120,22 +120,9 @@ namespace MorphologicalAntialiasing
             // Gives more precise control for small values, while preserving range.
             var threshold = math.pow(m_Threshold, 4);
 
-            // We only attempt to fetch the normals buffer if needed.
-            var normalsHandle = default(RTHandle);
-            if (m_EdgeDetectMode == EdgeDetectMode.Normals)
-            {
-                normalsHandle = ReflectionUtility.GetNormalsBuffer(renderer);
-                // If we fail to fetch the normals buffer we fall back on depth mode.
-                if (normalsHandle == null)
-                {
-                    m_EdgeDetectMode = EdgeDetectMode.Depth;
-                }
-            }
-
             var passData = new PassData
             {
                 ColorHandle = renderer.cameraColorTargetHandle,
-                NormalsHandle = normalsHandle,
                 CopyColorHandle = m_CopyColorHandle,
                 EdgesHandle = m_EdgesHandle,
                 BlendingWeightsHandle = m_BlendingWeightsHandle,

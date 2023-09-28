@@ -61,5 +61,25 @@
             #include "DetectEdges.hlsl"
             ENDHLSL
         }
+        
+        Pass
+        {
+            Stencil
+            {
+                Ref 1
+                Comp Always
+                Pass Replace
+            }
+
+            ZTest Always
+            ZWrite Off
+            Cull Off
+
+            HLSLPROGRAM
+            #pragma vertex Vert
+            #pragma fragment FragDepthAndNormal
+            #include "DetectEdges.hlsl"
+            ENDHLSL
+        }
     }
 }

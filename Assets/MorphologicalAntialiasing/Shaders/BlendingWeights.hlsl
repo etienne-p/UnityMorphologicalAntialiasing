@@ -31,7 +31,7 @@ float SearchNaive(in float2 uv, in float2 stepMul, in float channel)
 }
 
 // Here we use bilinear filtering to check 2 pixels at once.
-float Search(in float2 uv, in float2 stepMul, in float channel)
+float Search(in float2 uv, in float2 stepMul, in uint channel)
 {
     uv += _TexelSize * stepMul * (1.5).xx;
 
@@ -40,10 +40,7 @@ float Search(in float2 uv, in float2 stepMul, in float channel)
     UNITY_LOOP
     for (i = 0; i != _MaxSearchSteps; ++i)
     {
-        float2 edge = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, uv, 0).rg;
-        // TODO better way?
-        e = lerp(edge.x, edge.y, channel);
-        
+        e = SAMPLE_TEXTURE2D_X_LOD(EDGES_TEXTURE, sampler_LinearClamp, uv, 0).rg[channel];
         UNITY_FLATTEN
         if (e < 0.9)
         {
