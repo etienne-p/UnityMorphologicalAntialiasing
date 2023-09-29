@@ -12,9 +12,11 @@ float _Threshold;
 #define PI_REC 0.31830988618 // PI reciprocal.
 
 // Angle between 2 vectors.
-float GetAngle(float3 from, float3 to)
+float GetNormalizedVectorsAngle(float3 from, float3 to)
 {
-    return acos(dot(from, to) / (length(from) * length(to)));
+    return acos(dot(from, to));
+    // If we had to handle non normalized normals we'd use:
+    // return acos(dot(from, to) / (length(from) * length(to)));
 }
 
 float SampleDepth(float2 uv)
@@ -88,11 +90,11 @@ float4 GetNormalsDelta(float2 uv)
     float3 normalRight =  SampleNormal(uv + _TexelSize * float2( 1,  0));
     float3 normalBottom = SampleNormal(uv + _TexelSize * float2( 0,  1));
 
-    return  abs(float4(
-        GetAngle(normal, normalLeft), 
-        GetAngle(normal, normalTop), 
-        GetAngle(normal, normalRight), 
-        GetAngle(normal, normalBottom))) * PI_REC; // Scaling with respect to threshold range.
+    return abs(float4(
+        GetNormalizedVectorsAngle(normal, normalLeft), 
+        GetNormalizedVectorsAngle(normal, normalTop), 
+        GetNormalizedVectorsAngle(normal, normalRight), 
+        GetNormalizedVectorsAngle(normal, normalBottom))) * PI_REC; // Scaling with respect to threshold range.
 }
 
 float4 FragNormal(Varyings input) : SV_Target
