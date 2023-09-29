@@ -1,7 +1,5 @@
 # Unity Morphological Antialiasing
 
-_This is intended as a personal study and a work in progress, some remaining tasks are mentioned below. However you should be able to try it out, use it as it is or improve it yourself. Tested with DirectX11, although we expect compatibility with URP supported platforms._
-
 This is an implementation of **Morphological Antialiasing** for **Unity2022.3** and **URP** based on the article "Practical Morphological Antialiasing" from the [GPU Pro 360 Guide to Rendering
 ](https://www.routledge.com/GPU-Pro-360-Guide-to-Rendering/Engel/p/book/9780815365501) book. The main strength of the technique is its cheap cost compared to obtained results. We will not repeat the contents of the article here, and recommend checking it out.
 
@@ -44,7 +42,7 @@ Typically, higher maximal distances (up to a plateau) will lead to better result
 
 ## Implementation
 
-The technique is implemented as a `ScriptableRendererFeature` named `MorphologicalAntialiasing`. It uses one pass named `MorphologicalAntialiasingPass`. It uses 3 shaders, one for each of the 3 full-screen steps. Those are very close to the examples provided in the book (except maybe for edge detection), only adapted for integration with Unity/URP. Shaders are split in a `.shader` and `.hlsl` file. This lets us separate shaderlab properties and classic shader code. It also makes for cleaner code when implementing multiple passes.
+The technique is implemented as a `ScriptableRendererFeature` named `MorphologicalAntialiasing`. It uses one pass named `MorphologicalAntialiasingPass`. It uses 3 shaders, one for each of the 3 full-screen steps. Those are very close to the examples provided in the book (except maybe for edge detection and edge search), only adapted for integration with Unity/URP. Shaders are split in a `.shader` and `.hlsl` file. This lets us separate shaderlab properties and classic shader code. It also makes for cleaner code when implementing multiple passes.
 
 The technique uses a lookup texture storing pixel coverages for all handled patterns. We implemented the generation of this texture in `AreaLookup`. It is recalculated whenever **Max Distance** changes. We provide a simple `TestAreaLookup` component to test this lookup generation in isolation.
 
